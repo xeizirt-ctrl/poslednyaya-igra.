@@ -1,74 +1,65 @@
-
 name: Build game installers
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   android:
-    name: Build Android APK
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.3
-
     steps:
-      - name: Download project
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Check project files
+      - name: Prepare Android build
         run: |
-          test -f project.godot || (echo "ERROR: project.godot missing" && exit 1)
-          test -f export_presets.cfg || (echo "ERROR: export_presets.cfg missing" && exit 1)
           mkdir -p build
-          chmod -R u+rwX .
+          mkdir -p ~/.local/share/godot/export_templates
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then
+            cp -a /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/
+          fi
 
       - name: Import project
         run: |
-          godot --headless --editor --path . --quit
+          godot --headless --editor --path "$GITHUB_WORKSPACE" --quit
 
-      - name: Export Android
+      - name: Export Android APK
         run: |
-          godot --headless --path . --export-debug "Android Debug" build/poslednyaya_igra.apk
+          godot --headless --path "$GITHUB_WORKSPACE" --export-debug "Android Debug" build/poslednyaya_igra.apk
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: poslednyaya-igra-android-apk
           path: build/poslednyaya_igra.apk
           if-no-files-found: error
 
   windows:
-    name: Build Windows EXE
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.3
-
     steps:
-      - name: Download project
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Check project files
+      - name: Prepare Windows build
         run: |
-          test -f project.godot || (echo "ERROR: project.godot missing" && exit 1)
-          test -f export_presets.cfg || (echo "ERROR: export_presets.cfg missing" && exit 1)
           mkdir -p build/windows
-          chmod -R u+rwX .
+          mkdir -p ~/.local/share/godot/export_templates
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then
+            cp -a /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/
+          fi
 
       - name: Import project
         run: |
-          godot --headless --editor --path . --quit
+          godot --headless --editor --path "$GITHUB_WORKSPACE" --quit
 
-      - name: Export Windows
+      - name: Export Windows EXE
         run: |
-          godot --headless --path . --export-release "Windows Desktop" build/windows/poslednyaya_igra.exe
+          godot --headless --path "$GITHUB_WORKSPACE" --export-release "Windows Desktop" build/windows/poslednyaya_igra.exe
 
-      - name: Upload Windows game
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: poslednyaya-igra-windows
-          path: build/windows/
+          path: build/windows/*
           if-no-files-found: error
-          
