@@ -1,0 +1,54 @@
+name: Build game installers
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot templates and Android tools
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates ~/.config
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then
+            cp -a /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/
+          fi
+          if [ -d /root/.config/godot ]; then cp -a /root/.config/godot ~/.config/; fi
+          mkdir -p poslednyaya_igra_full_project/build
+      - name: Import and export Android APK
+        run: |
+          cd poslednyaya_igra_full_project
+          godot --headless --editor --path . --quit
+          godot --headless --path . --export-debug "Android Debug" build/poslednyaya_igra.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poslednyaya-igra-android-apk
+          path: poslednyaya_igra_full_project/build/poslednyaya_igra.apk
+          if-no-files-found: error
+  windows:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates ~/.config
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then
+            cp -a /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/
+          fi
+          if [ -d /root/.config/godot ]; then cp -a /root/.config/godot ~/.config/; fi
+          mkdir -p poslednyaya_igra_full_project/build/windows
+      - name: Import and export Windows EXE
+        run: |
+          cd poslednyaya_igra_full_project
+          godot --headless --editor --path . --quit
+          godot --headless --path . --export-release "Windows Desktop" build/windows/poslednyaya_igra.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poslednyaya-igra-windows
+          path: poslednyaya_igra_full_project/build/windows/*
+          if-no-files-found: error
